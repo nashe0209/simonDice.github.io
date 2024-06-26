@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Simón dice</title>
+    <meta charset="UTF-8">
+    <meta name="author" content="Brenda Nashelly Gómez Reyes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            display: grid;
+            place-items: center;
+            width: 100%;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+        }
+        /* Estilo para el cuerpo del documento */
+        
+        .simon {
+            position: relative;
+            margin-top: 500px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center; /* Centrar el contenido en el contenedor */
+        }
+        /* Estilo para el contenedor principal del juego "Simón Dice" */
+
+        h1 {
+            font-size: 40px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px; /* Espacio entre el título y el botón */
+        }
+        /* Estilo para el título principal del juego */
+
+        #startButton {
+            width: 100px;
+            border: none;
+            font-family: 'Roboto', sans-serif;
+            cursor: pointer;
+            border-radius: 10px;
+            color: #fff;
+            background-color: #587792;
+            padding: 10px;
+            transition: background-color 0.3s ease-in-out;
+        }
+        /* Estilo para el botón de inicio del juego */
+
+        #startButton:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        /* Estilo cuando el botón de inicio está deshabilitado */
+
+        .buttonContainer {
+            display: grid;
+            grid-gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            transform: rotate(45deg);
+            margin-top: 90px; /* Espacio entre el botón y los botones de colores */
+        }
+        /* Estilo para el contenedor de los botones de colores */
+
+        .square {
+            border-radius: 10px;
+            width: 150px;
+            height: 150px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+        /* Estilo base para los botones de colores */
+
+        .square:active,
+        .active {
+            filter: brightness(200%);
+        }
+        /* Estilo para cuando un botón está activo o es clickeado */
+
+        .red {
+            background-color: #ff4f61;
+        }
+
+        .blue {
+            background-color: #3f77e3;
+        }
+
+        .green {
+            background-color: #2cc17d;
+        }
+
+        .yellow {
+            background-color: #694eb4;
+        }
+        /* Estilos para los colores de los botones */
+
+        .roundContainer {
+            margin-top: 80px; /* Espacio entre los botones de colores y el contador de rondas */
+        }
+        /* Estilo para el contenedor del contador de rondas */
+
+        .roundCounter {
+            font-size: 24px;
+            color: #333;
+        }
+        /* Estilo para el contador de rondas */
+
+        #errorMessageContainer {
+            margin-top: 30px; /* Espacio entre el contador de rondas y el mensaje de error */
+        }
+
+        #errorMessage {
+            color: #ff2b41;
+            font-size: 25px;
+            font-weight: bold;
+            margin-top: 30px;
+        }
+        /* Estilo para el contenedor y mensaje de error */
+
+        #winMessageContainer{
+            margin-top: 40px;
+        }
+
+        #winMessage {
+            color: #04b365; /* Color verde para el mensaje de "Ganaste" */
+            font-size: 30px;
+            font-weight: bold;
+            margin-top: 30px;
+        }
+        /* Estilo para el contenedor y mensaje de victoria */
+
+        .winner {
+            animation: spin 1s ease-in-out;
+        }
+        /* Animación para el mensaje de victoria */
+
+        @keyframes spin {
+            100% { transform: rotate(180deg); }
+        }
+        /* Animación de rotación para el mensaje de victoria */
+
+        footer h4 { 
+            text-align: center; 
+            font-size: 15px; 
+            font-weight:lighter;
+            margin-top: 40px;
+        }
+        /* Estilo para el pie de página */
+    </style>
+</head>
+
+<body>
+    <div class="simon">
+        <h1 class="title">Simón Dice</h1>
+        <button id="startButton">Comenzar</button>
+        <div class="buttonContainer">
+            <div class="square red"></div>
+            <div class="square yellow"></div>
+            <div class="square blue"></div>
+            <div class="square green"></div>
+        </div>
+        <div class="roundContainer">
+            <div class="roundCounter" id="round"></div>
+        </div>
+        <div id="errorMessageContainer">
+            <div id="errorMessage"></div>
+        </div>
+        <div id="winMessageContainer">
+            <div id="winMessage"></div>
+        </div>
+    </div>
+    <footer>
+        <h4 id="copyright">© 2024. Estructura de datos</h4>
+    </footer>
+
+    <script>
+        const round = document.getElementById('round');
+        const simonButtons = document.getElementsByClassName('square');
+        const startButton = document.getElementById('startButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const winMessage = document.getElementById('winMessage'); 
+        /* Declaración de constantes que representan elementos del DOM */
+
+        class Simon {
+            constructor(simonButtons, startButton, round) {
+                this.round = 0;
+                this.userPosition = 0;
+                this.totalRounds = 5;
+                this.stack = []; // Pila
+                this.speed = 1000/2;
+                this.blockedButtons = true;
+                this.buttons = Array.from(simonButtons);
+                this.display = {
+                    startButton,
+                    round,
+                    errorMessage,
+                    winMessage  
+                }
+                this.errorSound = new Audio('./sounds/error.wav');
+                this.buttonSounds = [
+                    new Audio('./sounds/1.mp3'),
+                    new Audio('./sounds/2.mp3'),
+                    new Audio('./sounds/3.mp3'),
+                    new Audio('./sounds/4.mp3'),
+                ]
+            }
+            /* Definición de la clase principal del juego "Simón Dice" */
+
+            init() {
+                this.display.startButton.onclick = () => this.startGame();
+            }
+            /* Método de inicialización del juego */
+
+            startGame() {
+                this.display.errorMessage.textContent = ''; 
+                this.display.winMessage.textContent = '';  
+                this.display.startButton.disabled = true;
+                this.updateRound(0);
+                this.userPosition = 0;
+                this.createSequence(); // Llama a la función que usa la pila
+                this.buttons.forEach((element, i) => {
+                    element.classList.remove('winner');
+                    element.onclick = () => this.buttonClick(i);
+                });
+                this.showSequence();
+            }
+            /* Método para iniciar el juego */
+
+            updateRound(value) {
+                this.round = value;
+                this.display.round.textContent = `Round ${this.round}`;
+            }
+            /* Método para actualizar el contador de rondas */
+
+            createSequence() {
+                while (this.stack.length < this.totalRounds) {
+                    this.stack.push(this.getRandomColor());
+                }
+            }
+            /* Método para crear la secuencia de colores */
+
+            getRandomColor() {
+                return Math.floor(Math.random() * 4);
+            }
+            /* Método para obtener un color aleatorio */
+
+            buttonClick(value) {
+                !this.blockedButtons && this.validateChosenColor(value);
+            }
+            /* Método que se ejecuta al hacer clic en un botón */
+
+            validateChosenColor(value) {
+                if (this.stack[this.userPosition] === value) {
+                    this.buttonSounds[value].play();
+                    if (this.round === this.userPosition) {
+                        this.updateRound(this.round + 1);
+                        this.speed /= 1.02;
+                        this.isGameOver();
+                    } else {
+                        this.userPosition++;
+                    }
+                } else {
+                    this.gameLost();
+                }
+            }
+            /* Método para validar el color elegido por el usuario */
+
+            isGameOver() {
+                if (this.round === this.totalRounds) {
+                    this.gameWon();
+                } else {
+                    this.userPosition = 0;
+                    this.showSequence();
+                }
+            }
+            /* Método para verificar si el juego ha terminado */
+
+            showSequence() {
+                this.blockedButtons = true;
+                let sequenceIndex = 0;
+                let timer = setInterval(() => {
+                    const button = this.buttons[this.stack[sequenceIndex]];
+                    this.buttonSounds[this.stack[sequenceIndex]].play();
+                    this.toggleButtonStyle(button)
+                    setTimeout(() => this.toggleButtonStyle(button), this.speed / 2)
+                    sequenceIndex++;
+                    if (sequenceIndex > this.round) {
+                        this.blockedButtons = false;
+                        clearInterval(timer);
+                    }
+                }, this.speed);
+            }
+            /* Método para mostrar la secuencia de colores */
+
+            toggleButtonStyle(button) {
+                button.classList.toggle('active');
+            }
+            /* Método para cambiar el estilo de un botón */
+
+            gameLost() {
+                this.errorSound.play();
+                this.display.startButton.disabled = false;
+                this.blockedButtons = true;
+                this.display.errorMessage.textContent = '¡Game Over! Intenta de nuevo.';
+            }
+            /* Método para manejar la pérdida del juego */
+
+            gameWon() {
+                this.display.startButton.disabled = false;
+                this.blockedButtons = true;
+                this.buttons.forEach(element => {
+                    element.classList.add('winner');
+                });
+                this.display.winMessage.textContent = '¡Ganaste! 🏆';
+            }
+            /* Método para manejar la victoria del juego */
+        }
+
+        const simon = new Simon(simonButtons, startButton, round, errorMessage, winMessage);
+        simon.init();
+    </script>
+</body>
+</html>
